@@ -43,15 +43,14 @@ response = (
     .execute()
 )
 if not response.data:
-    last_date_plus3 = None
+    last_date = None
 
 else:
     last_date_str = response.data[0]['date'].replace('T', ' ')
     last_date = datetime.datetime.strptime(last_date_str, '%Y-%m-%d %H:%M:%S')
-    last_date_plus3 = last_date + datetime.timedelta(hours=3)
 
 # compare dates for gathering:
-if last_date_plus3 == rounded_date or last_date_plus3 is None:
+if last_date == rounded_date or last_date is None:
     raw_data = get_weather(ODESA_lat, ODESA_lon, URL_forecast_weather)
     clear_data = get_data(raw_data)
     upload_data(clear_data, FORCAST_TABLE)
