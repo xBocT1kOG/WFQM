@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 import datetime
 import pytz
 import math
-from supabase import create_client
+from supabase import create_client, Client
 
 # load secrets:
 load_dotenv()
@@ -140,8 +140,9 @@ def get_data(raw_data: dict) -> pd.DataFrame:
         clear_data_df[col] = clear_data_df[col].astype(pd.StringDtype())
 
     # add a day of prediction:
-    current_day = datetime.datetime.now(pytz.timezone(TIMEZONE)).day
-    clear_data_df['day_of_pred'] = clear_data_df['date'].dt.day - current_day + 1
+    current_date = datetime.datetime.now(pytz.timezone(TIMEZONE)).replace(tzinfo=None)
+    clear_data_df['day_of_pred'] = clear_data_df['date'] - current_date
+    clear_data_df['day_of_pred'] = clear_data_df['day_of_pred'].dt.days + 1
 
     return clear_data_df
 
@@ -162,4 +163,37 @@ def upload_data(data: pd.DataFrame, table_name: str) -> None:
         .execute()
     )
     return None
+
+
+if __name__ == '__main__':
+    # gather forecast weather:
+    # get current date rounded
+    current_date = datetime.datetime.now(pytz.timezone(TIMEZONE))
+    rounded_date = current_date.replace(minute=0, second=0, microsecond=0) + datetime.timedelta(hours=1)
+
+    # get last date from DB +3 hours
+    supabase: Client = create_client(url, key)
+
+    response = (
+        supabase.table(FORCAST_TABLE)
+        .select("date")
+        .order("date", desc=True)
+        .limit(1)
+        .execute()
+    )
+    if not response.data:
+        last_date_plus3 = None
+
+    else:
+        last_date_str = response.data[0]['date'].replace('T', ' ')
+        last_date = datetime.datetime.strptime(last_date_str, '%Y-%m-%d %H:%M:%S')
+        last_date_plus3 = last_date + datetime.timedelta(hours=3)
+
+    # compare dates for gathering:
+    if last_date_plus3 == rounded_date or last_date_plus3 is None:
+        raw_data = get_weather(ODESA_lat, ODESA_lon, URL_forecast_weather)
+        clear_data = get_data(raw_data)
+        upload_data(clear_data, FORCAST_TABLE)
+
+
 
