@@ -203,6 +203,4 @@ def get_forecast_image(city: str, weather_desc: str):
         print(f"Не удалось получить картинку, статус: {response.status_code}")
         return None
 
-if __name__ == '__main__':
-    image = get_forecast_image(city= 'ukraine, odesa', weather_desc= 'sunny')
-    send_tg_image(image)
+#if __name__ == '__main__':
