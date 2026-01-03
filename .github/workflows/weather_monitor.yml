@@ -3,8 +3,7 @@ name: Weather Forecast Monitor
 on:
   schedule:
     # Запуск в 23:45 UTC (01:45 по Киеву)
-    - cron: '45 23 * * *'
-    - cron: '45 */3 * * *'
+    - cron: '45 23,02,05,08,11,14,17,20 * * *'
 
   # Позволяет запускать скрипт вручную во вкладке Actions
   workflow_dispatch:
