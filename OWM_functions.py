@@ -6,6 +6,9 @@ import datetime
 import pytz
 import math
 from supabase import create_client, Client
+import telebot
+import urllib.parse
+import random
 
 # load secrets:
 load_dotenv()
@@ -27,6 +30,12 @@ TIMEZONE = 'Europe/Kyiv'
 # tables for upload
 CURRENT_TABLE = 'owm_current'
 FORCAST_TABLE = 'owm_forecast'
+
+# telegram names:
+TOKEN = os.environ.get("TG_BOT_TOKEN")
+CHAT_ID = os.environ.get("TG_ID")
+
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 # define function to convert unix(UTC) to local time:
 def convert_unix(unix_ts: int, timezone_name: str = TIMEZONE):
@@ -164,36 +173,36 @@ def upload_data(data: pd.DataFrame, table_name: str) -> None:
     )
     return None
 
+# define telegram function:
+def send_tg_msg(msg: str) -> None:
+
+    bot = telebot.TeleBot(TOKEN)
+    bot.send_message(CHAT_ID, msg, parse_mode='HTML')
+
+def send_tg_image(image: str) -> None:
+    bot = telebot.TeleBot(TOKEN)
+    with open(image, 'rb') as photo:
+        bot.send_photo(CHAT_ID, photo, parse_mode='HTML')
+
+# define gemini request:
+def get_forecast_image(city: str, weather_desc: str):
+
+    prompt = (f'Beautiful photorealistic cinematic random view of {city},'
+              f'weather is {weather_desc}')
+
+    encoded_prompt = urllib.parse.quote(prompt)
+    random_seed = random.randint(1, 1000000)
+    image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true&seed={random_seed}"
+    response = requests.get(image_url, timeout=30)
+    if response.status_code == 200:
+        image_path = "weather_report.png"
+        with open(image_path, "wb") as f:
+            f.write(response.content)
+        return image_path
+    else:
+        print(f"Не удалось получить картинку, статус: {response.status_code}")
+        return None
 
 if __name__ == '__main__':
-    # gather forecast weather:
-    # get current date rounded
-    current_date = datetime.datetime.now(pytz.timezone(TIMEZONE))
-    rounded_date = current_date.replace(minute=0, second=0, microsecond=0) + datetime.timedelta(hours=1)
-
-    # get last date from DB +3 hours
-    supabase: Client = create_client(url, key)
-
-    response = (
-        supabase.table(FORCAST_TABLE)
-        .select("date")
-        .order("date", desc=True)
-        .limit(1)
-        .execute()
-    )
-    if not response.data:
-        last_date_plus3 = None
-
-    else:
-        last_date_str = response.data[0]['date'].replace('T', ' ')
-        last_date = datetime.datetime.strptime(last_date_str, '%Y-%m-%d %H:%M:%S')
-        last_date_plus3 = last_date + datetime.timedelta(hours=3)
-
-    # compare dates for gathering:
-    if last_date_plus3 == rounded_date or last_date_plus3 is None:
-        raw_data = get_weather(ODESA_lat, ODESA_lon, URL_forecast_weather)
-        clear_data = get_data(raw_data)
-        upload_data(clear_data, FORCAST_TABLE)
-
-
-
+    image = get_forecast_image(city= 'ukraine, odesa', weather_desc= 'sunny')
+    send_tg_image(image)
