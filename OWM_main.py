@@ -50,7 +50,7 @@ else:
     last_date = datetime.datetime.strptime(last_date_str, '%Y-%m-%d %H:%M:%S')
 
 # compare dates for gathering:
-if last_date == rounded_date or last_date is None:
+if last_date > rounded_date or last_date is None:
     raw_data = get_weather(ODESA_lat, ODESA_lon, URL_forecast_weather)
     clear_data = get_data(raw_data)
     upload_data(clear_data, FORCAST_TABLE)
