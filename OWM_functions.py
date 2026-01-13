@@ -129,7 +129,12 @@ def get_data(raw_data: dict) -> pd.DataFrame:
         clear_data['pressure_sea_level'].append(raw_data['main']['sea_level'])
         clear_data['wind'].append(raw_data['wind']['speed'])
         clear_data['wind_gust'].append(raw_data['wind']['gust'])
-        clear_data['visibility_m'].append(raw_data['visibility'])
+        try:
+            clear_data['visibility_m'].append(raw_data['visibility'])
+        except KeyError as e:
+            clear_data['visibility_m'].append(None)
+            send_tg_msg(f'visibility data receive failed, {e}')
+
 
     # convert data to DataFrame:
     clear_data_df = pd.DataFrame(clear_data)
