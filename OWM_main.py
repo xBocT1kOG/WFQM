@@ -1,6 +1,7 @@
 import os
 from OWM_functions import *
 from supabase import create_client, Client
+import datetime
 
 # load secrets:
 api_key = os.getenv("OWM_API_KEY") #API key for weather service
@@ -31,6 +32,7 @@ upload_data(clear_data, CURRENT_TABLE)
 # get current date rounded
 current_date = datetime.datetime.now(pytz.timezone(TIMEZONE))
 rounded_date = current_date.replace(minute=0, second=0, microsecond=0) + datetime.timedelta(hours=1)
+send_tg_msg(f'weather gathered {datetime.datetime.now(tz=pytz.timezone(TIMEZONE))}')
 
 # get last date from DB +3 hours
 supabase: Client = create_client(url, key)
@@ -54,4 +56,5 @@ if last_date > rounded_date or last_date is None:
     raw_data = get_weather(ODESA_lat, ODESA_lon, URL_forecast_weather)
     clear_data = get_data(raw_data)
     upload_data(clear_data, FORCAST_TABLE)
+    send_tg_msg(f'forecast gathered {datetime.datetime.now(tz=pytz.timezone(TIMEZONE))}')
 
