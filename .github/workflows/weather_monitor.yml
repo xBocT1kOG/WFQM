@@ -33,6 +33,6 @@ jobs:
           OWM_API_KEY: ${{ secrets.OWM_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TOKEN: ${{ secrets.TOKEN }}
           TG_ID: ${{ secrets.CHAT_ID }}
         run: python OWM_main.py
