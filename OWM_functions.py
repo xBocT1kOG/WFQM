@@ -179,15 +179,15 @@ def upload_data(data: pd.DataFrame, table_name: str) -> None:
     return None
 
 # define telegram function:
-def send_tg_msg(msg: str) -> None:
+def send_tg_msg(token:str, chat_id: str, msg: str) -> None:
 
-    bot = telebot.TeleBot(TOKEN)
-    bot.send_message(CHAT_ID, msg, parse_mode='HTML')
+    bot = telebot.TeleBot(token)
+    bot.send_message(chat_id, msg, parse_mode='HTML')
 
-def send_tg_image(image: str) -> None:
-    bot = telebot.TeleBot(TOKEN)
+def send_tg_image(token: str, chat_id: str, image: str) -> None:
+    bot = telebot.TeleBot(token)
     with open(image, 'rb') as photo:
-        bot.send_photo(CHAT_ID, photo, parse_mode='HTML')
+        bot.send_photo(chat_id, photo, parse_mode='HTML')
 
 # define gemini request:
 def get_forecast_image(city: str, weather_desc: str):
