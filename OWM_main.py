@@ -2,6 +2,7 @@ import os
 from OWM_functions import *
 from supabase import create_client, Client
 import datetime
+import pytz
 
 # load secrets:
 api_key = os.getenv("OWM_API_KEY") #API key for weather service
@@ -29,7 +30,7 @@ FORCAST_TABLE = 'owm_forecast'
 raw_data = get_weather(ODESA_lat, ODESA_lon, URL_current_weather)
 clear_data = get_data(raw_data)
 upload_data(clear_data, CURRENT_TABLE)
-send_tg_msg(TOKEN,CHAT_ID,f'weather gathered {datetime.datetime.now(tz=pytz.timezone(TIMEZONE))}')
+send_tg_msg(TOKEN, CHAT_ID, f'weather gathered {datetime.datetime.now(tz=pytz.timezone(TIMEZONE))}')
 
 # gather forecast weather:
 # get current date rounded
