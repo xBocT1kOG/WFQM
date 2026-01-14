@@ -33,31 +33,8 @@ upload_data(clear_data, CURRENT_TABLE)
 send_tg_msg(TOKEN, CHAT_ID, f'weather gathered {datetime.datetime.now(tz=pytz.timezone(TIMEZONE))}')
 
 # gather forecast weather:
-# get current date rounded
-current_date = datetime.datetime.now(pytz.timezone(TIMEZONE))
-rounded_date = current_date.replace(minute=0, second=0, microsecond=0) + datetime.timedelta(hours=1)
-
-# get last date from DB +3 hours
-supabase: Client = create_client(url, key)
-
-response = (
-    supabase.table(FORCAST_TABLE)
-    .select("date")
-    .order("date", desc=True)
-    .limit(1)
-    .execute()
-)
-if not response.data:
-    last_date = None
-
-else:
-    last_date_str = response.data[0]['date'].replace('T', ' ')
-    last_date = datetime.datetime.strptime(last_date_str, '%Y-%m-%d %H:%M:%S')
-
-# compare dates for gathering:
-if last_date < rounded_date or last_date is None:
-    raw_data = get_weather(ODESA_lat, ODESA_lon, URL_forecast_weather)
-    clear_data = get_data(raw_data)
-    upload_data(clear_data, FORCAST_TABLE)
-    send_tg_msg(TOKEN, CHAT_ID, f'forecast gathered {datetime.datetime.now(tz=pytz.timezone(TIMEZONE))}')
+raw_data = get_weather(ODESA_lat, ODESA_lon, URL_forecast_weather)
+clear_data = get_data(raw_data)
+upload_data(clear_data, FORCAST_TABLE)
+send_tg_msg(TOKEN, CHAT_ID, f'forecast gathered {datetime.datetime.now(tz=pytz.timezone(TIMEZONE))}')
 
