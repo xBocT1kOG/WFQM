@@ -2,10 +2,8 @@ import os
 from OWM_functions import *
 import datetime
 import pytz
-from dotenv import load_dotenv
 
 # load secrets:
-load_dotenv()
 api_key = os.getenv("OWM_API_KEY") #API key for weather service
 url = os.environ.get("SUPABASE_URL") #URL to DB
 key = os.environ.get("SUPABASE_KEY") #key for DB
