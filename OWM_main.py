@@ -29,12 +29,12 @@ FORCAST_TABLE = 'owm_forecast'
 raw_data = get_weather(ODESA_lat, ODESA_lon, URL_current_weather)
 clear_data = get_data(raw_data)
 upload_data(clear_data, CURRENT_TABLE)
+send_tg_msg(f'weather gathered {datetime.datetime.now(tz=pytz.timezone(TIMEZONE))}')
 
 # gather forecast weather:
 # get current date rounded
 current_date = datetime.datetime.now(pytz.timezone(TIMEZONE))
 rounded_date = current_date.replace(minute=0, second=0, microsecond=0) + datetime.timedelta(hours=1)
-send_tg_msg(f'weather gathered {datetime.datetime.now(tz=pytz.timezone(TIMEZONE))}')
 
 # get last date from DB +3 hours
 supabase: Client = create_client(url, key)
