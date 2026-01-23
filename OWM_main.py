@@ -26,14 +26,18 @@ CURRENT_TABLE = 'owm_current'
 FORCAST_TABLE = 'owm_forecast'
 
 # gather current weather:
-raw_data = get_weather(ODESA_lat, ODESA_lon, URL_current_weather)
-clear_data = get_data(raw_data)
-upload_data(clear_data, CURRENT_TABLE)
-send_tg_msg(TOKEN, CHAT_ID, f'weather gathered {datetime.datetime.now(tz=pytz.timezone(TIMEZONE))}')
+try:
+    raw_data = get_weather(ODESA_lat, ODESA_lon, URL_current_weather)
+    clear_data = get_data(raw_data)
+    upload_data(clear_data, CURRENT_TABLE)
+except KeyError as e:
+    send_tg_msg(TOKEN, CHAT_ID, f'current weather script failed, {e}')
 
 # gather forecast weather:
-raw_data = get_weather(ODESA_lat, ODESA_lon, URL_forecast_weather)
-clear_data = get_data(raw_data)
-upload_data(clear_data, FORCAST_TABLE)
-send_tg_msg(TOKEN, CHAT_ID, f'forecast gathered {datetime.datetime.now(tz=pytz.timezone(TIMEZONE))}')
+try:
+    raw_data = get_weather(ODESA_lat, ODESA_lon, URL_forecast_weather)
+    clear_data = get_data(raw_data)
+    upload_data(clear_data, FORCAST_TABLE)
+except KeyError as e:
+    send_tg_msg(TOKEN, CHAT_ID, f'forecast weather script failed, {e}')
 
