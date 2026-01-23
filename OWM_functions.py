@@ -83,7 +83,7 @@ def get_data(raw_data: dict) -> pd.DataFrame:
     clear_data = dict()
 
     # fill data dict:
-    columns = ['date', 'city', 'weather', 'description', 'clouds_%',
+    columns = ['date', 'time', 'city', 'weather', 'description', 'clouds_%',
                'temp', 'temp_min', 'temp_max', 'feels_like', 'humidity',
                'pressure', 'pressure_ground_level', 'pressure_sea_level',
                'wind', 'wind_gust', 'visibility_m']
@@ -95,6 +95,7 @@ def get_data(raw_data: dict) -> pd.DataFrame:
 
         for data in raw_data['list']:
             clear_data['date'].append(convert_unix(int(data['dt'])))
+            clear_data['time'].append(convert_unix(int(data['dt'])))
             clear_data['weather'].append(data['weather'][0]['main'])
             clear_data['description'].append(data['weather'][0]['description'])
             clear_data['clouds_%'].append(data['clouds']['all'])
@@ -108,13 +109,18 @@ def get_data(raw_data: dict) -> pd.DataFrame:
             clear_data['pressure_sea_level'].append(data['main']['sea_level'])
             clear_data['wind'].append(data['wind']['speed'])
             clear_data['wind_gust'].append(data['wind']['gust'])
-            clear_data['visibility_m'].append(data['visibility'])
+            try:
+                clear_data['visibility_m'].append(raw_data['visibility'])
+            except KeyError as e:
+                clear_data['visibility_m'].append(None)
+                send_tg_msg(TOKEN, CHAT_ID,f'visibility data receive failed, {e}')
 
         for i in range(len(raw_data['list'])):
             clear_data['city'].append(raw_data['city']['name'])
 
     else:
         clear_data['date'].append(convert_unix(int(raw_data['dt'])))
+        clear_data['time'].append(convert_unix(int(raw_data['dt'])))
         clear_data['city'].append(raw_data['name'])
         clear_data['weather'].append(raw_data['weather'][0]['main'])
         clear_data['description'].append(raw_data['weather'][0]['description'])
@@ -133,7 +139,7 @@ def get_data(raw_data: dict) -> pd.DataFrame:
             clear_data['visibility_m'].append(raw_data['visibility'])
         except KeyError as e:
             clear_data['visibility_m'].append(None)
-            send_tg_msg(f'visibility data receive failed, {e}')
+            send_tg_msg(TOKEN, CHAT_ID, f'visibility data receive failed, {e}')
 
 
     # convert data to DataFrame:
@@ -141,7 +147,11 @@ def get_data(raw_data: dict) -> pd.DataFrame:
 
     # convert datetime format
     clear_data_df['date'] = pd.to_datetime(clear_data['date'])
+    clear_data_df['time'] = pd.to_datetime(clear_data['date'])
     clear_data_df['date'] = clear_data_df['date'].dt.ceil('h')
+    clear_data_df['time'] = clear_data_df['date'].dt.ceil('h')
+    clear_data_df['date'] = clear_data_df['date'].dt.date
+    clear_data_df['time'] = clear_data_df['time'].dt.time
 
     # round temperature and wind values:
     round_columns = ['temp', 'temp_min', 'temp_max', 'feels_like', 'wind', 'wind_gust']
@@ -153,18 +163,15 @@ def get_data(raw_data: dict) -> pd.DataFrame:
     for col in obj_columns:
         clear_data_df[col] = clear_data_df[col].astype(pd.StringDtype())
 
-    # add a day of prediction:
-    current_date = datetime.datetime.now(pytz.timezone(TIMEZONE)).replace(tzinfo=None)
-    clear_data_df['day_of_pred'] = clear_data_df['date'] - current_date
-    clear_data_df['day_of_pred'] = clear_data_df['day_of_pred'].dt.days + 1
-
     return clear_data_df
 
 # define function to upload data to DB:
 def upload_data(data: pd.DataFrame, table_name: str) -> None:
 
     # convert DataFrame to dict(json):
-    data['date'] = data['date'].dt.strftime('%Y-%m-%d %H:%M:%S')
+    data['date'] = data['date'].dt.strftime('%Y-%m-%d')
+    data['time'] = data['time'].dt.strftime('%H:%M:%S')
+
     upload_dict = data.to_dict(orient='records')
 
     # connection setup
@@ -188,24 +195,5 @@ def send_tg_image(token: str, chat_id: str, image: str) -> None:
     bot = telebot.TeleBot(token)
     with open(image, 'rb') as photo:
         bot.send_photo(chat_id, photo, parse_mode='HTML')
-
-# define gemini request:
-def get_forecast_image(city: str, weather_desc: str):
-
-    prompt = (f'Beautiful photorealistic cinematic random view of {city},'
-              f'weather is {weather_desc}')
-
-    encoded_prompt = urllib.parse.quote(prompt)
-    random_seed = random.randint(1, 1000000)
-    image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true&seed={random_seed}"
-    response = requests.get(image_url, timeout=30)
-    if response.status_code == 200:
-        image_path = "weather_report.png"
-        with open(image_path, "wb") as f:
-            f.write(response.content)
-        return image_path
-    else:
-        print(f"Не удалось получить картинку, статус: {response.status_code}")
-        return None
 
 #if __name__ == '__main__':
