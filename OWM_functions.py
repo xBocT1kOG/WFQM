@@ -113,6 +113,7 @@ def get_data(raw_data: dict) -> pd.DataFrame:
                 clear_data['visibility_m'].append(raw_data['visibility'])
             except KeyError as e:
                 clear_data['visibility_m'].append(None)
+                send_tg_msg(TOKEN, CHAT_ID,f'visibility data receive failed, {e}')
 
         for i in range(len(raw_data['list'])):
             clear_data['city'].append(raw_data['city']['name'])
@@ -138,6 +139,8 @@ def get_data(raw_data: dict) -> pd.DataFrame:
             clear_data['visibility_m'].append(raw_data['visibility'])
         except KeyError as e:
             clear_data['visibility_m'].append(None)
+            send_tg_msg(TOKEN, CHAT_ID, f'visibility data receive failed, {e}')
+
 
     # convert data to DataFrame:
     clear_data_df = pd.DataFrame(clear_data)
@@ -177,7 +180,7 @@ def upload_data(data: pd.DataFrame, table_name: str) -> None:
     # insert data:
     response = (
         supabase.table(table_name)
-        .upsert(upload_dict, on_conflict='date, time')
+        .upsert(upload_dict, on_conflict='date')
         .execute()
     )
     return None
@@ -193,7 +196,23 @@ def send_tg_image(token: str, chat_id: str, image: str) -> None:
     with open(image, 'rb') as photo:
         bot.send_photo(chat_id, photo, parse_mode='HTML')
 
+# define get data from DB:
+def get_today_weather() -> pd.DataFrame:
+    today = datetime.date.today().strftime("%Y-%m-%d")
+
+    supabase: Client = create_client(url, key)
+
+    response = (
+        supabase.table(FORCAST_TABLE)
+        .select("*")
+        .eq("date", today)
+        .execute()
+    )
+
+    today_df = pd.DataFrame(response['data'][0])
+    return today_df
+
 if __name__ == '__main__':
-    raw_data = get_weather(ODESA_lat, ODESA_lon, URL_current_weather)
-    clear_data = get_data(raw_data)
-    upload_data(clear_data, CURRENT_TABLE)
+    today = get_today_weather()
+    today.info()
+    print(today)
