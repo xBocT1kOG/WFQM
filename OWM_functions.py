@@ -180,7 +180,7 @@ def upload_data(data: pd.DataFrame, table_name: str) -> None:
     # insert data:
     response = (
         supabase.table(table_name)
-        .upsert(upload_dict, on_conflict='date')
+        .upsert(upload_dict, on_conflict='date, time')
         .execute()
     )
     return None
