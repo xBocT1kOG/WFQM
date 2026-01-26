@@ -109,11 +109,7 @@ def get_data(raw_data: dict) -> pd.DataFrame:
             clear_data['pressure_sea_level'].append(data['main']['sea_level'])
             clear_data['wind'].append(data['wind']['speed'])
             clear_data['wind_gust'].append(data['wind']['gust'])
-            try:
-                clear_data['visibility_m'].append(raw_data['visibility'])
-            except KeyError as e:
-                clear_data['visibility_m'].append(None)
-                send_tg_msg(TOKEN, CHAT_ID,f'visibility data receive failed, {e}')
+            clear_data['visibility_m'].append(data.get('visibility', None))
 
         for i in range(len(raw_data['list'])):
             clear_data['city'].append(raw_data['city']['name'])
@@ -135,12 +131,7 @@ def get_data(raw_data: dict) -> pd.DataFrame:
         clear_data['pressure_sea_level'].append(raw_data['main']['sea_level'])
         clear_data['wind'].append(raw_data['wind']['speed'])
         clear_data['wind_gust'].append(raw_data['wind']['gust'])
-        try:
-            clear_data['visibility_m'].append(raw_data['visibility'])
-        except KeyError as e:
-            clear_data['visibility_m'].append(None)
-            send_tg_msg(TOKEN, CHAT_ID, f'visibility data receive failed, {e}')
-
+        clear_data['visibility_m'].append(raw_data.get('visibility', None))
 
     # convert data to DataFrame:
     clear_data_df = pd.DataFrame(clear_data)
@@ -172,12 +163,16 @@ def upload_data(data: pd.DataFrame, table_name: str) -> None:
     data['date'] = data['date'].astype(str)
     data['time'] = data['time'].astype(str)
 
+    # clear NaN:
+    data['visibility_m'].replace({float('nan'): None})
+
+    # convert DataFrame to JSON:
     upload_dict = data.to_dict(orient='records')
 
     # connection setup
     supabase = create_client(url, key)
 
-    # insert data:
+    # insert data with UPSERT:
     response = (
         supabase.table(table_name)
         .upsert(upload_dict, on_conflict='date, time')
@@ -213,6 +208,6 @@ def get_today_weather() -> pd.DataFrame:
     return today_df
 
 if __name__ == '__main__':
-    today = get_today_weather()
-    today.info()
-    print(today)
+    raw_data = get_weather(ODESA_lat, ODESA_lon, URL_forecast_weather)
+    clear_data = get_data(raw_data)
+    upload_data(clear_data, FORCAST_TABLE)
