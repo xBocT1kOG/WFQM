@@ -7,8 +7,7 @@ import pytz
 import math
 from supabase import create_client, Client
 import telebot
-import urllib.parse
-import random
+import google.generativeai as genai
 
 # load secrets:
 load_dotenv()
@@ -204,10 +203,34 @@ def get_today_weather() -> pd.DataFrame:
         .execute()
     )
 
-    today_df = pd.DataFrame(response['data'][0])
+    today_df = pd.DataFrame(response.data)
+
     return today_df
 
+def get_text_forecast(df: pd.DataFrame) -> str:
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel('gemini-2.5-flash')
+    df_as_text = df.to_string(index=False)
+
+    prompt = f'''
+    Ты — саркастичный, но полезный метеоролог.
+    Отвечай в стиле старого одессита, с юмором и местными словечками.
+    Вот данные о погоде на ближайшее сутки:
+    
+    {df_as_text}
+    
+    Твоя задача:
+    1. Проанализируй данные.
+    2. Напиши краткую сводку на русском языке (максимум 4-5 предложений).
+    3. Дай совет, как одеться или может чем заняться в соответсвии с погодой.
+    4. Если будет дождь, обязательно предупреди.
+    '''
+
+    response = model.generate_content(prompt)
+    return response.text
+
+
 if __name__ == '__main__':
-    raw_data = get_weather(ODESA_lat, ODESA_lon, URL_forecast_weather)
-    clear_data = get_data(raw_data)
-    upload_data(clear_data, FORCAST_TABLE)
+    forecast = get_today_weather()
+    message = get_text_forecast(forecast)
+    send_tg_msg(TOKEN, CHAT_ID, message)
