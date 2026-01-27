@@ -85,7 +85,7 @@ def get_data(raw_data: dict) -> pd.DataFrame:
     columns = ['date', 'time', 'city', 'weather', 'description', 'clouds_%',
                'temp', 'temp_min', 'temp_max', 'feels_like', 'humidity',
                'pressure', 'pressure_ground_level', 'pressure_sea_level',
-               'wind', 'wind_gust', 'visibility_m']
+               'wind', 'wind_gust']
 
     for col in columns:
         clear_data[col] = list()
@@ -108,7 +108,6 @@ def get_data(raw_data: dict) -> pd.DataFrame:
             clear_data['pressure_sea_level'].append(data['main']['sea_level'])
             clear_data['wind'].append(data['wind']['speed'])
             clear_data['wind_gust'].append(data['wind']['gust'])
-            clear_data['visibility_m'].append(data.get('visibility', None))
 
         for i in range(len(raw_data['list'])):
             clear_data['city'].append(raw_data['city']['name'])
@@ -130,7 +129,6 @@ def get_data(raw_data: dict) -> pd.DataFrame:
         clear_data['pressure_sea_level'].append(raw_data['main']['sea_level'])
         clear_data['wind'].append(raw_data['wind']['speed'])
         clear_data['wind_gust'].append(raw_data['wind']['gust'])
-        clear_data['visibility_m'].append(raw_data.get('visibility', None))
 
     # convert data to DataFrame:
     clear_data_df = pd.DataFrame(clear_data)
@@ -161,9 +159,6 @@ def upload_data(data: pd.DataFrame, table_name: str) -> None:
     # convert DataFrame to dict(json):
     data['date'] = data['date'].astype(str)
     data['time'] = data['time'].astype(str)
-
-    # clear NaN:
-    data['visibility_m'].replace({float('nan'): None})
 
     # convert DataFrame to JSON:
     upload_dict = data.to_dict(orient='records')
