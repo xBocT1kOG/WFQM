@@ -7,7 +7,7 @@ import pytz
 import math
 from supabase import create_client, Client
 import telebot
-import google.generativeai as genai
+from google import genai
 
 # load secrets:
 load_dotenv()
@@ -203,8 +203,6 @@ def get_today_weather() -> pd.DataFrame:
     return today_df
 
 def get_text_forecast(df: pd.DataFrame) -> str:
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-2.5-flash')
     df_as_text = df.to_string(index=False)
 
     prompt = f'''
@@ -216,13 +214,19 @@ def get_text_forecast(df: pd.DataFrame) -> str:
     
     Твоя задача:
     1. Проанализируй данные.
-    2. Напиши краткую сводку на русском языке (максимум 4-5 предложений).
-    3. Дай совет, как одеться или может чем заняться в соответсвии с погодой.
-    4. Если будет дождь, обязательно предупреди.
+    2. Напиши краткую сводку на русском языке (80 - 100 слов).
+    3. Подкрепляй свои слова актуальными значениями погоды из данных.
+    4. Нас интересует время: утро, день и вечер.
+    5. Если будет дождь, обязательно предупреди.
+    6. Если какие то значения погоды выше или ниже общепринятой региональной нормы, отметь это.
     '''
+    with genai.Client(api_key=GEMINI_API_KEY) as client:
 
-    response = model.generate_content(prompt)
-    return response.text
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt
+        )
+        return response.text
 
 
 if __name__ == '__main__':
