@@ -185,40 +185,65 @@ def send_tg_image(token: str, chat_id: str, image: str) -> None:
     with open(image, 'rb') as photo:
         bot.send_photo(chat_id, photo, parse_mode='HTML')
 
-# define get data from DB:
-def get_today_weather() -> pd.DataFrame:
-    today = datetime.date.today().strftime("%Y-%m-%d")
+# define get data from DB, date = 'now'/'past':
+def get_weather_from_db(date: str, table: str) -> pd.DataFrame:
+    today = datetime.date.today()
+    day_0 = today.strftime("%Y-%m-%d")
+    day_1 = (today - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+    day_2 = (today - datetime.timedelta(days=2)).strftime("%Y-%m-%d")
+    day_3 = (today - datetime.timedelta(days=3)).strftime("%Y-%m-%d")
 
     supabase: Client = create_client(url, key)
 
+    if date == 'now':
+        days = [day_0]
+
+    elif date == 'past':
+        days = [day_1, day_2, day_3]
+
+    else:
+        raise KeyError('Wrong date parameter, use "now" or "past"')
+
     response = (
-        supabase.table(FORCAST_TABLE)
+        supabase.table(table)
         .select("*")
-        .eq("date", today)
+        .in_("date", days)
         .execute()
     )
 
-    today_df = pd.DataFrame(response.data)
+    if not response.data:
+        raise ValueError("No data returned from the database.")
 
-    return today_df
+    return pd.DataFrame(response.data)
 
-def get_text_forecast(df: pd.DataFrame) -> str:
-    df_as_text = df.to_string(index=False)
+def get_text_forecast(today: pd.DataFrame, past_forecast: pd.DataFrame, past_real: pd.DataFrame) -> str:
+    today_as_text = today.to_string(index=False)
+    past_forecast_as_text = past_forecast.to_string(index=False)
+    past_real_as_text = past_real.to_string(index=False)
 
     prompt = f'''
     Ты — саркастичный, но полезный метеоролог.
     Отвечай в стиле старого одессита, с юмором и местными словечками.
-    Вот данные о погоде на ближайшее сутки:
-    
-    {df_as_text}
+    Вот данные о погоде на ближайшее сутки: {today_as_text}
     
     Твоя задача:
     1. Проанализируй данные.
-    2. Напиши краткую сводку на русском языке (80 - 100 слов).
+    2. Напиши краткую сводку на русском языке.
     3. Подкрепляй свои слова актуальными значениями погоды из данных.
     4. Нас интересует время: утро, день и вечер.
     5. Если будет дождь, обязательно предупреди.
     6. Если какие то значения погоды выше или ниже общепринятой региональной нормы, отметь это.
+    7. Оцени точность прогноза в процентах и скажи, стоит ли доверять прогнозу сегодня.
+        Данные по прогнозу погоды за прошлые дни: {past_forecast_as_text}
+        Данные по реальной погоде за прошлые дни: {past_real_as_text}
+    
+    
+    Структура ответа, каждый пункт это новый абзац без оглавления:
+    1. Приветствие (одно предложение, максимум 10 слов).
+    2. Краткий прогноз погоды на сегодня (Утро, день, вечер. Только температура и осадки. Каждое предложение с новой строчки).
+    3. Сводка прогноза погоды с конкретными значениями (максимум 100 слов).
+    4. Оценка точности прогноза на основе анализа прошлых данных (1-2 предложения, максимум 20 слов).
+    5. Прощание (одно предложение, максимум 10 слов).
     '''
     with genai.Client(api_key=GEMINI_API_KEY) as client:
 
@@ -230,6 +255,8 @@ def get_text_forecast(df: pd.DataFrame) -> str:
 
 
 if __name__ == '__main__':
-    forecast = get_today_weather()
-    message = get_text_forecast(forecast)
+    today_weather = get_weather_from_db('now', FORCAST_TABLE)
+    past_forecast_weather = get_weather_from_db('past', FORCAST_TABLE)
+    past_real_weather = get_weather_from_db('past', CURRENT_TABLE)
+    message = get_text_forecast(today_weather, past_forecast_weather, past_real_weather)
     send_tg_msg(TOKEN, CHAT_ID, message)

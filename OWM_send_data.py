@@ -1,7 +1,5 @@
 import os
 from OWM_functions import *
-import datetime
-import pytz
 
 # load secrets:
 api_key = os.getenv("OWM_API_KEY") #API key for weather service
@@ -25,19 +23,14 @@ TIMEZONE = 'Europe/Kyiv'
 CURRENT_TABLE = 'owm_current'
 FORCAST_TABLE = 'owm_forecast'
 
-# gather current weather:
+# send data to TG:
 try:
-    raw_data = get_weather(ODESA_lat, ODESA_lon, URL_current_weather)
-    clear_data = get_data(raw_data)
-    upload_data(clear_data, CURRENT_TABLE)
-except KeyError as e:
-    send_tg_msg(TOKEN, CHAT_ID, f'current weather script failed, {e}')
-
-# gather forecast weather:
-try:
-    raw_data = get_weather(ODESA_lat, ODESA_lon, URL_forecast_weather)
-    clear_data = get_data(raw_data)
-    upload_data(clear_data, FORCAST_TABLE)
-except KeyError as e:
-    send_tg_msg(TOKEN, CHAT_ID, f'forecast weather script failed, {e}')
+    today_weather = get_weather_from_db('now', FORCAST_TABLE)
+    past_forecast_weather = get_weather_from_db('past', FORCAST_TABLE)
+    past_real_weather = get_weather_from_db('past', CURRENT_TABLE)
+    message = get_text_forecast(today_weather, past_forecast_weather, past_real_weather)
+    send_tg_msg(TOKEN, CHAT_ID, message)
+except Exception as e:
+    print(f'TG message script failed, {e}')
+    send_tg_msg(TOKEN, CHAT_ID, f'TG message script failed, {e}')
 
