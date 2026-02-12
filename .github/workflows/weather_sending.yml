@@ -2,8 +2,8 @@ name: Weather forecast and analysis sending
 
 on:
   schedule:
-    # Запуск в 4:00 UTC (6:00 по Киеву)
-    - cron: '0 4 * * *'
+    # Запуск в 3:00 UTC (5:00 по Киеву)
+    - cron: '0 3 * * *'
 
   # Позволяет запускать скрипт вручную во вкладке Actions
   workflow_dispatch:
