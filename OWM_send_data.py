@@ -34,3 +34,10 @@ except Exception as e:
     print(f'TG message script failed, {e}')
     send_tg_msg(TOKEN, CHAT_ID, f'TG message script failed, {e}')
 
+# delete data older than two weeks:
+try:
+    delete_old_data(FORCAST_TABLE)
+    delete_old_data(CURRENT_TABLE)
+except Exception as e:
+    print(f'delete script failed, {e}')
+    send_tg_msg(TOKEN, CHAT_ID, f'delete script failed, {e}')

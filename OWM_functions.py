@@ -256,6 +256,18 @@ def get_text_forecast(today: pd.DataFrame, past_forecast: pd.DataFrame, past_rea
         )
         return response.text
 
+def delete_old_data(table: str) -> None:
+    today = datetime.datetime.today()
+    delete_date = (today - datetime.timedelta(weeks=2)).strftime("%Y-%m-%d")
+
+    supabase: Client = create_client(url, key)
+
+    response = (
+        supabase.table(table)
+        .delete()
+        .lte("date", delete_date)
+        .execute()
+    )
 
 if __name__ == '__main__':
     today_weather = get_weather_from_db('now', FORCAST_TABLE)
