@@ -37,7 +37,7 @@ CHAT_ID = os.environ.get("TG_ID")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 # define function to convert unix(UTC) to local time:
-def convert_unix(unix_ts: int, timezone_name: str = TIMEZONE):
+def convert_unix(unix_ts: int, timezone_name: str = TIMEZONE) -> str:
     utc_datetime = datetime.datetime.fromtimestamp(unix_ts, tz=pytz.utc)
     tz = pytz.timezone(timezone_name)
     local_datetime = utc_datetime.astimezone(tz)
@@ -49,7 +49,7 @@ def convert_unix(unix_ts: int, timezone_name: str = TIMEZONE):
 def get_weather(lat: float, lon: float, url: str) -> dict | None:
 
     if not api_key:
-        print('API Load Error') #ADD ALERT!!!
+        print('API Load Error')
         return None
 
     # parameters for API data:
@@ -216,6 +216,7 @@ def get_weather_from_db(date: str, table: str) -> pd.DataFrame:
 
     return pd.DataFrame(response.data)
 
+# define AI connect and process data:
 def get_text_forecast(today: pd.DataFrame, past_forecast: pd.DataFrame, past_real: pd.DataFrame) -> str:
     today_as_text = today.to_string(index=False)
     past_forecast_as_text = past_forecast.to_string(index=False)
@@ -256,6 +257,7 @@ def get_text_forecast(today: pd.DataFrame, past_forecast: pd.DataFrame, past_rea
         )
         return response.text
 
+#define func to delete data older than 2 weeks:
 def delete_old_data(table: str) -> None:
     today = datetime.datetime.today()
     delete_date = (today - datetime.timedelta(weeks=2)).strftime("%Y-%m-%d")
